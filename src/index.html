@@ -44,6 +44,8 @@
       var frame_time = 1000;
       var squishiness = 2;
 
+      var width = null;
+      var height = null;
       var num_frames = null;
       var frame_x = null;
       var frame_y = null;
@@ -68,7 +70,39 @@
         return new Promise((resolve) => setTimeout(resolve, milliseconds));
       }
 
-      function set_dimensions() {
+      function preRender(source, width, height) {
+        let frame_array = [];
+
+        let num_frames = source.length;
+
+        for (i = 0; i < num_frames; i++) {
+          let canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+
+          let ctx = canvas.getContext("2d");
+
+          ctx.font = pixel_size.toString() + "px Courier New";
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          for (j = 0; j < frame_y; j++) {
+            let line = source[i][j];
+            for (l = 0; l < frame_x; l++) {
+              let start = l * 3;
+              ctx.fillStyle = convertColor(line.slice(start + 1, start + 3));
+              ctx.fillText(
+                line[start],
+                l * (pixel_size - squishiness) + 2,
+                pixel_size + j * pixel_size
+              );
+            }
+          }
+          frame_array.push(canvas);
+        }
+        return frame_array;
+      }
+
+      function setDimensions() {
         num_frames = animations[c_index].length;
         frame_x = Math.floor(animations[c_index][0][0].length / 3);
         frame_y = animations[c_index][0].length;
@@ -77,8 +111,8 @@
         let c = document.getElementById(canvas_id);
         let ctx = c.getContext("2d");
 
-        let width = c.parentElement.offsetWidth - 5;
-        let height = c.parentElement.offsetHeight - 5;
+        width = c.parentElement.offsetWidth - 5;
+        height = c.parentElement.offsetHeight - 5;
 
         if (width >= height) {
           pixel_size = height / frame_y;
@@ -98,14 +132,25 @@
       }
 
       async function start() {
+        setDimensions();
+        frame_array = preRender(dino, width, height);
+        console.log(frame_array)
+
+        let c = document.getElementById(canvas_id);
+        let ctx = c.getContext("2d");
+
         while (true) {
-          console.log("Starting animation");
-          set_dimensions();
-          await loop();
+          for (i = 0; i < frame_array.length; i++) {
+            console.log(i)
+            ctx.clearRect(0, 0, c.width, c.height);
+            ctx.drawImage(frame_array[i], 0, 0);
+
+            await sleep(40);
+          }
         }
       }
 
-      function convert_color(str_hex) {
+      function convertColor(str_hex) {
         let color_int = parseInt("0x" + str_hex);
 
         let color =
