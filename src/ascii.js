@@ -13,11 +13,11 @@ var ascii = {
       let canvas = document.getElementById(canvasID);
       let ctx = canvas.getContext("2d");
 
-      let sData = this.getSourceData(source, canvas);
+      let sourceData = this.getSourceData(source, canvas);
 
       let [renderedFrames, currentFrame_i] = await this.preRender(
         source,
-        sData,
+        sourceData,
         ctx
       );
 
@@ -91,7 +91,7 @@ var ascii = {
       "," +
       green[(color_int & 0x1c) >> 2] +
       "," +
-      red[color_int & 0x03] +
+      blue[color_int & 0x03] +
       ")";
 
     return color;
@@ -101,11 +101,11 @@ var ascii = {
    * Pre-renders the source into an array of frames.
    * Displays intermediate renders on the canvas.
    * @param {array} source The source to render.
-   * @param {object} sData An object of parameters for the source and canvas.
+   * @param {object} sourceData An object of parameters for the source and canvas.
    * @param {context} ctx The 2D context of the canvas.
    * @returns An array of the rendered frames and the last played frame index.
    */
-  preRender: async function (source, sData, ctx) {
+  preRender: async function (source, sourceData, ctx) {
     // Save window size.
     let windowX = window.innerWidth;
     let windowY = window.innerHeight;
@@ -115,24 +115,24 @@ var ascii = {
     let currentFrame_i = 0;
     let lastTime = Date.now();
 
-    for (i = 0; i < sData.numFrames; i++) {
+    for (i = 0; i < sourceData.numFrames; i++) {
       // Check if window size changed (kill render).
       if (this.checkWindowChange(windowX, windowY)) return [null, null];
 
       // Create a new canvas for the frame.
       let preCanvas = document.createElement("canvas");
-      preCanvas.width = sData.canvasWidth;
-      preCanvas.height = sData.canvasHeight;
+      preCanvas.width = sourceData.canvasWidth;
+      preCanvas.height = sourceData.canvasHeight;
 
       let preCtx = preCanvas.getContext("2d");
 
-      preCtx.font = sData.pixelSize + "px Courier New";
+      preCtx.font = sourceData.pixelSize + "px Courier New";
 
       // Render the frame at index i.
-      for (y = 0; y < sData.frameY; y++) {
+      for (y = 0; y < sourceData.frameY; y++) {
         let line = source[i][y];
 
-        for (x = 0; x < sData.frameX; x++) {
+        for (x = 0; x < sourceData.frameX; x++) {
           let start = x * 3;
 
           // Draw a single pixel.
@@ -141,8 +141,8 @@ var ascii = {
           );
           preCtx.fillText(
             line[start],
-            x * (sData.pixelSize - this.squishiness) + 2,
-            sData.pixelSize + y * sData.pixelSize
+            x * (sourceData.pixelSize - this.squishiness) + 2,
+            sourceData.pixelSize + y * sourceData.pixelSize
           );
         }
       }
@@ -152,12 +152,12 @@ var ascii = {
       // Display partial render.
       let now = Date.now();
       if (now - lastTime >= this.frameDelay) {
-        // If we can draw a new frame.
+        // If there is a frame rendered for us to draw.
         if (currentFrame_i < renderedFrames.length) {
           await this.drawIntermediateFrame(
             ctx,
             renderedFrames[currentFrame_i],
-            (i / source.length) % 100
+            (i / source.length) * 100
           );
 
           currentFrame_i++;
