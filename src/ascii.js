@@ -5,10 +5,10 @@ var ascii = {
 
   /**
    * Start the render on the cavnas for a specific source.
-   * @param {array} source The source array of data.
    * @param {string} canvasID The ID of the canvas to render on.
+   * @param {array} source The source array of data.
    */
-  start: async function (source, canvasID) {
+  start: async function (canvasID, source) {
     while (true) {
       let canvas = document.getElementById(canvasID);
       let ctx = canvas.getContext("2d");

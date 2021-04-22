@@ -2,39 +2,47 @@ from PIL import Image
 import cv2
 import numpy as np
 import os
-import sys
+import argparse
 
 # ascii characters used to build the output text
 ASCII_CHARS = ["@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."]
 
-# resize image according to a new width
-
 
 def resize_image(image, new_width=100):
+    """Resize image according to a new width.
+    """
     width, height = image.size
     ratio = height/width
     new_height = int(new_width * ratio)
     resized_image = image.resize((new_width, new_height))
     return(resized_image)
 
-# convert each pixel to grayscale
+
 def grayify(image):
+    """Convert each image to grayscale.
+    """
     grayscale_image = image.convert("L")
     return(grayscale_image)
 
-# convert pixels to a string of ascii characters
+
 def pixels_to_ascii(image):
+    """Convert pixels to a string of ascii characters.
+    """
     pixels = image.getdata()
     characters = "".join([ASCII_CHARS[pixel//25] for pixel in pixels])
     return(characters)
 
 
 def get_color_data(image):
+    """Get the colour data for the image.
+    """
     pixels = image.getdata()
     return pixels
 
 
 def convert_frame(orig_image, new_width=100):
+    """Convert a frame to its ascii equivalent.
+    """
     try:
         image = Image.fromarray(orig_image)
     except Exception as e:
@@ -56,6 +64,8 @@ def convert_frame(orig_image, new_width=100):
 
 
 def convert_color(tuple):
+    """Convert a 24-bit colour tuple to its 8-bit equivalent.
+    """
 
     red_l = [0, 36, 72, 109, 145, 182, 218, 255]
     green_l = [0, 36, 72, 109, 145, 182, 218, 255]
@@ -74,34 +84,65 @@ def convert_color(tuple):
 
 
 def main():
+    """Entry point.
+    """
+    # Parse arguments.
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_file", type=str,
+                        help="path to video file to convert")
+    parser.add_argument("output_file", type=str, help="path to output file")
+    parser.add_argument("list_name", type=str,
+                        help="name of output JavaScript array")
+    parser.add_argument("-w", "--width", type=int,
+                        help="width (in pixels) of output. default 100", default=100)
+    parser.add_argument("-n", "--num-frames", type=int,
+                        help="number of frames to convert. -1 for all. default -1", default=-1)
+    parser.add_argument("-s", "--skip", type=int,
+                        help="how many frames to skip before next render. default 1", default=1)
 
-    if len(sys.argv) != 7:
-        print("Usage: <input file> <size> <num frames (-1 for all)> <skip> <out file> <list name>")
-        exit(1)
+    args = parser.parse_args()
 
-    ofile = open(sys.argv[5], "w")
+    # Print configuration.
+    to_print = []
+    to_print.append("Input:".ljust(11) + args.input_file)
+    to_print.append("Output:".ljust(11) + args.output_file)
+    to_print.append("List:".ljust(11) + args.list_name)
+    to_print.append("Width:".ljust(11) + str(args.width))
+    to_print.append("# frames:".ljust(11) + str(args.num_frames))
+    to_print.append("Skip:".ljust(11) + str(args.skip))
 
-    ofile.write("var " + sys.argv[6] + " = [\n")
+    longest = len(max(to_print, key=len))
 
-    cap = cv2.VideoCapture(sys.argv[1])
+    print("Video to ASCII")
+    print("-" * longest)
+    for x in to_print:
+        print(x)
+    print("-" * longest + "\n")
+
+    # Start conversion.
+    ofile = open(args.output_file, "w")
+    ofile.write("var " + args.list_name + " = [\n")
+    cap = cv2.VideoCapture(args.input_file)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    if args.num_frames != -1:
+        frame_count = min(frame_count, args.num_frames)
 
     currentFrame = 0
-    while (sys.argv[3] == "-1") or currentFrame < int(sys.argv[3]):
+    while (args.num_frames == -1) or currentFrame < args.num_frames:
 
         ret, frame = cap.read()
 
         if not ret:
             break
 
-        if currentFrame % int(sys.argv[4]) != 0:
+        if currentFrame % args.skip != 0:
             currentFrame += 1
             continue
 
-        print("Converting frame " + str(currentFrame))
-
         ofile.write("[")
         frame, color_data = convert_frame(cv2.cvtColor(
-            frame, cv2.COLOR_BGR2RGB), int(sys.argv[2]))
+            frame, cv2.COLOR_BGR2RGB), args.width)
 
         lines = frame.split("\n")
 
@@ -119,8 +160,20 @@ def main():
 
         currentFrame += 1
 
+        # Print current progress
+        progress_width = 30
+        progress = " [" + ((int(((currentFrame / frame_count)
+                                 * progress_width))) * "=").ljust(progress_width) + "] "
+        progress += str(int((currentFrame / frame_count) * 100)) + "%"
+        print("Converting frame " +
+              str(currentFrame).ljust(len(str(frame_count))) + progress, end="\r")
+
     ofile.write("]")
 
+    ofile.close()
 
-# run program
-main()
+    print("\nDone.")
+
+
+if __name__ == "__main__":
+    main()
