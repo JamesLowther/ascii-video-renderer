@@ -166,7 +166,7 @@ def main():
                                  * progress_width))) * "=").ljust(progress_width) + "] "
         progress += str(int((currentFrame / frame_count) * 100)) + "%"
         print("Converting frame " +
-              str(currentFrame).ljust(len(str(frame_count))) + progress, end="\r")
+              str(currentFrame).rjust(len(str(frame_count))) + "/" + str(frame_count) + progress, end="\r")
 
     ofile.write("]")
 
