@@ -102,13 +102,22 @@ def main():
 
     args = parser.parse_args()
 
+    # Start conversion.
+    ofile = open(args.output_file, "w")
+    ofile.write("var " + args.list_name + " = [\n")
+    cap = cv2.VideoCapture(args.input_file)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    if args.num_frames != -1:
+        frame_count = min(frame_count, args.num_frames)
+
     # Print configuration.
     to_print = []
     to_print.append("Input:".ljust(11) + args.input_file)
     to_print.append("Output:".ljust(11) + args.output_file)
     to_print.append("List:".ljust(11) + args.list_name)
     to_print.append("Width:".ljust(11) + str(args.width))
-    to_print.append("# frames:".ljust(11) + str(args.num_frames))
+    to_print.append("# frames:".ljust(11) + str(frame_count))
     to_print.append("Skip:".ljust(11) + str(args.skip))
 
     longest = len(max(to_print, key=len))
@@ -118,15 +127,6 @@ def main():
     for x in to_print:
         print(x)
     print("-" * longest + "\n")
-
-    # Start conversion.
-    ofile = open(args.output_file, "w")
-    ofile.write("var " + args.list_name + " = [\n")
-    cap = cv2.VideoCapture(args.input_file)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    if args.num_frames != -1:
-        frame_count = min(frame_count, args.num_frames)
 
     currentFrame = 0
     while (args.num_frames == -1) or currentFrame < args.num_frames:

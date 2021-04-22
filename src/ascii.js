@@ -182,7 +182,7 @@ var ascii = {
 
     // Draw the loading screen.
     ctx.textAlign = "end";
-    let text = Math.floor(progress) + "%";
+    let text = "Loading " + Math.floor(progress) + "%";
     let dim = ctx.measureText(text);
 
     // Loading text options.
