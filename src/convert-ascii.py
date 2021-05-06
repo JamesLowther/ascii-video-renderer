@@ -104,6 +104,11 @@ def main():
 
     args = parser.parse_args()
 
+    # Check if file exists.
+    if not os.path.isfile(args.input_file) or not os.path.exists(args.input_file):
+        print("File " + args.input_file + " not found")
+        exit(1)
+
     # Start conversion.
     ofile = open(args.output_file, "w")
     ofile.write("const " + args.list_name + " = [\n")
