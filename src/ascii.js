@@ -65,8 +65,8 @@ var ascii = {
     return {
       frameX: frameX,
       frameY: frameY,
-      canvasWidth: canvasWidth,
-      canvasHeight: canvasHeight,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
       pixelSize: pixelSize,
       numFrames: numFrames,
     };

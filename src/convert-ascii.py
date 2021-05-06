@@ -91,34 +91,39 @@ def main():
     parser.add_argument("input_file", type=str,
                         help="path to video file to convert")
     parser.add_argument("output_file", type=str, help="path to output file")
-    parser.add_argument("list_name", type=str,
-                        help="name of output JavaScript array")
+    parser.add_argument("-l", "--list-name", type=str,
+                        help="name of output JavaScript array. default frames", default="frames")
     parser.add_argument("-w", "--width", type=int,
                         help="width (in pixels) of output. default 100", default=100)
     parser.add_argument("-n", "--num-frames", type=int,
                         help="number of frames to convert. -1 for all. default -1", default=-1)
     parser.add_argument("-s", "--skip", type=int,
                         help="how many frames to skip before next render. default 1", default=1)
+    parser.add_argument("-r", "--react", nargs="?", const=True, default=False,
+                        help="add export directive to allow for React import")
 
     args = parser.parse_args()
 
     # Start conversion.
     ofile = open(args.output_file, "w")
-    ofile.write("var " + args.list_name + " = [\n")
+    ofile.write("const " + args.list_name + " = [\n")
     cap = cv2.VideoCapture(args.input_file)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     if args.num_frames != -1:
         frame_count = min(frame_count, args.num_frames)
-
+    
     # Print configuration.
+    t_length = 11
+
     to_print = []
-    to_print.append("Input:".ljust(11) + args.input_file)
-    to_print.append("Output:".ljust(11) + args.output_file)
-    to_print.append("List:".ljust(11) + args.list_name)
-    to_print.append("Width:".ljust(11) + str(args.width))
-    to_print.append("# frames:".ljust(11) + str(frame_count))
-    to_print.append("Skip:".ljust(11) + str(args.skip))
+    to_print.append("Input:".ljust(t_length) + args.input_file)
+    to_print.append("Output:".ljust(t_length) + args.output_file)
+    to_print.append("List:".ljust(t_length) + args.list_name)
+    to_print.append("Width:".ljust(t_length) + str(args.width))
+    to_print.append("# frames:".ljust(t_length) + str(frame_count))
+    to_print.append("Skip:".ljust(t_length) + str(args.skip))
+    to_print.append("React:".ljust(t_length)+ str(args.react))
 
     longest = len(max(to_print, key=len))
 
@@ -128,16 +133,16 @@ def main():
         print(x)
     print("-" * longest + "\n")
 
-    currentFrame = 0
-    while (args.num_frames == -1) or currentFrame < args.num_frames:
+    current_frame = 0
+    while args.num_frames == -1 or current_frame < frame_count:
 
         ret, frame = cap.read()
 
         if not ret:
             break
 
-        if currentFrame % args.skip != 0:
-            currentFrame += 1
+        if current_frame % args.skip != 0:
+            current_frame += 1
             continue
 
         ofile.write("[")
@@ -158,17 +163,20 @@ def main():
 
         ofile.write("],")
 
-        currentFrame += 1
+        current_frame += 1
 
         # Print current progress
         progress_width = 30
-        progress = " [" + ((int(((currentFrame / frame_count)
+        progress = " [" + ((int(((current_frame / frame_count)
                                  * progress_width))) * "=").ljust(progress_width) + "] "
-        progress += str(int((currentFrame / frame_count) * 100)) + "%"
+        progress += str(int((current_frame / frame_count) * 100)) + "%"
         print("Converting frame " +
-              str(currentFrame).rjust(len(str(frame_count))) + "/" + str(frame_count) + progress, end="\r")
+              str(current_frame).rjust(len(str(frame_count))) + "/" + str(frame_count) + progress, end="\r")
 
     ofile.write("]")
+
+    if args.react:
+        ofile.write("\nexport default " + args.list_name)
 
     ofile.close()
 
